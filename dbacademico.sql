@@ -16,6 +16,73 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+--
+-- Name: codigo_curso(text); Type: FUNCTION; Schema: public; Owner: luiz
+--
+
+CREATE FUNCTION public.codigo_curso(nomecurso text) RETURNS TABLE(nome text, codigo integer)
+    LANGUAGE sql
+    AS $$
+	SELECT nom_curso, cod_curso
+	FROM cursos
+	WHERE nom_curso ILIKE '%' || nomeCurso || '%'; 
+$$;
+
+
+ALTER FUNCTION public.codigo_curso(nomecurso text) OWNER TO luiz;
+
+--
+-- Name: codigo_disciplina(text); Type: FUNCTION; Schema: public; Owner: luiz
+--
+
+CREATE FUNCTION public.codigo_disciplina(nomedisc text) RETURNS TABLE(nome text, codigo integer)
+    LANGUAGE sql
+    AS $$
+	SELECT nom_disc, cod_disc
+	FROM disciplinas
+	WHERE nom_disc  ILIKE '%' || nomeDisc || '%';
+$$;
+
+
+ALTER FUNCTION public.codigo_disciplina(nomedisc text) OWNER TO luiz;
+
+--
+-- Name: consulta_aluno(text); Type: FUNCTION; Schema: public; Owner: luiz
+--
+
+CREATE FUNCTION public.consulta_aluno(nome text) RETURNS TABLE(nomecursomatriculado text, cred integer, mgp double precision)
+    LANGUAGE sql
+    AS $$
+	SELECT cursos.nom_curso, cursos.tot_cred, alunos.mgp
+	FROM alunos
+	INNER JOIN cursos
+	ON alunos.cod_curso = cursos.cod_curso
+	WHERE alunos.nom_alu ILIKE nome;
+$$;
+
+
+ALTER FUNCTION public.consulta_aluno(nome text) OWNER TO luiz;
+
+--
+-- Name: pre_requisitos(integer); Type: FUNCTION; Schema: public; Owner: luiz
+--
+
+CREATE FUNCTION public.pre_requisitos(coddisc integer) RETURNS TABLE(discprereqnom text)
+    LANGUAGE sql
+    AS $$
+	SELECT nom_disc
+	FROM disciplinas
+	WHERE cod_disc IN
+	(
+		SELECT cod_disc_pre
+		FROM PRE_REQUISITOS 
+		WHERE cod_disc = codDisc
+	);	
+$$;
+
+
+ALTER FUNCTION public.pre_requisitos(coddisc integer) OWNER TO luiz;
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
