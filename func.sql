@@ -43,19 +43,47 @@ AS $$
 	);	
 $$ LANGUAGE SQL;
 
--- se eu passar o nome de uma disciplina quero saber quais são as
--- outras disciplinas que depedem desta.
-SELECT nom_disc
-FROM disciplinas
-WHERE cod_disc =
+--AAA
+/*
+CREATE FUNCTION disciplinas_dependentes( discNome TEXT )
+RETURNS TABLE( disc_nome TEXT, cod_disc INT, cod_disc_pre INT, nom_disc_pre TEXT )
+AS $$
+SELECT * FROM
 (
-	SELECT cod_disc_pre
-	FROM pre_requisitos
-	WHERE cod_disc =
+	SELECT TABELAO.nom_disc, TABELAO.cod_disc, TABELAO.cod_disc_pre, disciplinas.nom_disc
+	FROM disciplinas
+	INNER JOIN
 	(
-		SELECT cod_disc
+		SELECT disciplinas.nom_disc, pre_requisitos.cod_disc, pre_requisitos.cod_disc_pre 
 		FROM disciplinas
-		WHERE nom_disc = 'TEORIA MACROECONOMICA I'
-	)
+		INNER JOIN pre_requisitos
+		ON disciplinas.cod_disc = pre_requisitos.cod_disc
+	) TABELAO
+	ON TABELAO.cod_disc_pre = disciplinas.cod_disc
+) BIGCHUNGUS
+WHERE BIGCHUNGUS.cod_disc_pre =
+(
+	SELECT cod_disc
+	FROM disciplinas
+	WHERE nom_disc = discNome
 );
+$$ LANGUAGE SQL;*/
+
+--Produto cartesiando com cross join para distribuir um
+--valor de código de curso para cada tupla da tabela gerada.
+--Copiamos tuplas em curriculo apenas alterando curso.
+CREATE FUNCTION copia_curso( codigoCursoAlvo INT, codigoCursoDestino INT )
+AS $$
+INSERT INTO
+curriculos( cod_curso, cod_disc, periodo )
+SELECT cod_curso, cod_disc, periodo
+FROM cursos
+CROSS JOIN
+(
+	SELECT cod_disc, periodo 
+	FROM curriculos
+	WHERE cod_curso = codigoCursoAlvo
+) COPIA
+WHERE cod_curso = codigoCursoDestino;
+$$ LANGUAGE SQL;
 

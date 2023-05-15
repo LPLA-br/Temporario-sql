@@ -115,3 +115,38 @@ FROM
 INNER JOIN disciplinas
 ON TABELAO.cod_disc_pre = disciplinas.cod_disc ;
 
+-- Nova consulta para pre_requisitos e dependências (mais completo)
+SELECT * FROM
+(
+	SELECT TABELAO.nom_disc, TABELAO.cod_disc, TABELAO.cod_disc_pre, disciplinas.nom_disc
+	FROM disciplinas
+	INNER JOIN
+	(
+		SELECT disciplinas.nom_disc, pre_requisitos.cod_disc, pre_requisitos.cod_disc_pre 
+		FROM disciplinas
+		INNER JOIN pre_requisitos
+		ON disciplinas.cod_disc = pre_requisitos.cod_disc
+	) TABELAO
+	ON TABELAO.cod_disc_pre = disciplinas.cod_disc
+) BIGCHUNGUS
+WHERE BIGCHUNGUS.cod_disc =
+(
+	SELECT cod_disc
+	FROM disciplinas
+	WHERE nom_disc = 'TECNICA DE PESQUISA EM ECONOMIA'
+);
+
+-- todas as disciplinas do curso de Ciencias Economicas
+SELECT nom_disc
+FROM disciplinas
+WHERE cod_disc IN
+(
+	SELECT cod_disc 
+	FROM curriculos 
+	WHERE cod_curso =
+	(
+		SELECT cod_curso 
+		FROM cursos 
+		WHERE nom_curso = 'Ciencias Economicas'
+	)
+);
