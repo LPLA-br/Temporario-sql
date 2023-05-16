@@ -2,8 +2,8 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 15.2
--- Dumped by pg_dump version 15.2
+-- Dumped from database version 13.10 (Debian 13.10-0+deb11u1)
+-- Dumped by pg_dump version 13.10 (Debian 13.10-0+deb11u1)
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -21,11 +21,13 @@ SET row_security = off;
 --
 
 CREATE FUNCTION public.codigo_curso(nomecurso text) RETURNS TABLE(nome text, codigo integer)
-    LANGUAGE sql
+    LANGUAGE plpgsql
     AS $$
+BEGIN
 	SELECT nom_curso, cod_curso
 	FROM cursos
 	WHERE nom_curso ILIKE '%' || nomeCurso || '%'; 
+END
 $$;
 
 
@@ -36,11 +38,13 @@ ALTER FUNCTION public.codigo_curso(nomecurso text) OWNER TO luiz;
 --
 
 CREATE FUNCTION public.codigo_disciplina(nomedisc text) RETURNS TABLE(nome text, codigo integer)
-    LANGUAGE sql
+    LANGUAGE plpgsql
     AS $$
+BEGIN
 	SELECT nom_disc, cod_disc
 	FROM disciplinas
 	WHERE nom_disc  ILIKE '%' || nomeDisc || '%';
+END
 $$;
 
 
@@ -51,33 +55,131 @@ ALTER FUNCTION public.codigo_disciplina(nomedisc text) OWNER TO luiz;
 --
 
 CREATE FUNCTION public.consulta_aluno(nome text) RETURNS TABLE(nomecursomatriculado text, cred integer, mgp double precision)
-    LANGUAGE sql
+    LANGUAGE plpgsql
     AS $$
+BEGIN
 	SELECT cursos.nom_curso, cursos.tot_cred, alunos.mgp
 	FROM alunos
 	INNER JOIN cursos
 	ON alunos.cod_curso = cursos.cod_curso
 	WHERE alunos.nom_alu ILIKE nome;
+END
 $$;
 
 
 ALTER FUNCTION public.consulta_aluno(nome text) OWNER TO luiz;
 
 --
+-- Name: copia_curso(integer, integer); Type: FUNCTION; Schema: public; Owner: luiz
+--
+
+CREATE FUNCTION public.copia_curso(codigocursoalvo integer, codigocursodestino integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	INSERT INTO
+	curriculos( cod_curso, cod_disc, periodo )
+		SELECT cod_curso, cod_disc, periodo
+		FROM cursos
+		CROSS JOIN
+		(
+			SELECT cod_disc, periodo 
+			FROM curriculos
+			WHERE cod_curso = codigoCursoAlvo
+		) COPIA
+		WHERE cod_curso = codigoCursoDestino;
+END
+$$;
+
+
+ALTER FUNCTION public.copia_curso(codigocursoalvo integer, codigocursodestino integer) OWNER TO luiz;
+
+--
+-- Name: disciplinas_dependentes(text); Type: FUNCTION; Schema: public; Owner: luiz
+--
+
+CREATE FUNCTION public.disciplinas_dependentes(discnome text) RETURNS TABLE(disc_nome text, cod_disc integer, cod_disc_pre integer, nom_disc_pre text)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+	SELECT * FROM
+	(
+		SELECT TABELAO.nom_disc, TABELAO.cod_disc, TABELAO.cod_disc_pre, disciplinas.nom_disc
+		FROM disciplinas
+		INNER JOIN
+		(
+			SELECT disciplinas.nom_disc, pre_requisitos.cod_disc, pre_requisitos.cod_disc_pre 
+			FROM disciplinas
+			INNER JOIN pre_requisitos
+			ON disciplinas.cod_disc = pre_requisitos.cod_disc
+		) TABELAO
+		ON TABELAO.cod_disc_pre = disciplinas.cod_disc
+	) BIGCHUNGUS
+	WHERE BIGCHUNGUS.cod_disc_pre =
+	(
+		SELECT cod_disc
+		FROM disciplinas
+		WHERE nom_disc = discNome
+	);
+END
+$$;
+
+
+ALTER FUNCTION public.disciplinas_dependentes(discnome text) OWNER TO luiz;
+
+--
+-- Name: migra_curso(integer, integer); Type: FUNCTION; Schema: public; Owner: luiz
+--
+
+CREATE FUNCTION public.migra_curso(codigocursoantigo integer, codigocursonovo integer) RETURNS void
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+	demo INT;
+BEGIN
+	--migrar professores para novo curso.
+	UPDATE professores
+	SET cod_curso = codigoCursoNovo
+	WHERE cod_curso = codigoCursoAntigo;
+
+	--migrar alunos para novo curso.
+	UPDATE alunos
+	SET cod_curso = codigoCursoNovo
+	WHERE cod_curso = codigoCursoAntigo;
+
+	--migrar o coordenador.
+	UPDATE cursos
+	SET cod_coord =
+	(
+		SELECT cod_coord
+		FROM cursos
+		WHERE cod_curso = codigoCursoAntigo
+	)
+	WHERE cod_curso = codigoCursoNovo;
+
+END
+$$;
+
+
+ALTER FUNCTION public.migra_curso(codigocursoantigo integer, codigocursonovo integer) OWNER TO luiz;
+
+--
 -- Name: pre_requisitos(integer); Type: FUNCTION; Schema: public; Owner: luiz
 --
 
 CREATE FUNCTION public.pre_requisitos(coddisc integer) RETURNS TABLE(discprereqnom text)
-    LANGUAGE sql
+    LANGUAGE plpgsql
     AS $$
+BEGIN
 	SELECT nom_disc
 	FROM disciplinas
 	WHERE cod_disc IN
 	(
 		SELECT cod_disc_pre
-		FROM PRE_REQUISITOS 
+		FROM pre_requisitos 
 		WHERE cod_disc = codDisc
 	);	
+END
 $$;
 
 
@@ -728,6 +830,50 @@ COPY public.curriculos (cod_curso, cod_disc, periodo) FROM stdin;
 26	502059	8
 26	502067	9
 26	502075	9
+666	200070	1
+666	200851	2
+666	200967	7
+666	201297	6
+666	202161	1
+666	203362	1
+666	203370	2
+666	203389	3
+666	203397	4
+666	203532	3
+666	203540	3
+666	203559	4
+666	203605	8
+666	203729	9
+666	203737	10
+666	203990	3
+666	204024	7
+666	204040	6
+666	204067	5
+666	204075	6
+666	204083	5
+666	204091	6
+666	204164	5
+666	204180	5
+666	204237	8
+666	204300	4
+666	204318	5
+666	204326	3
+666	204334	4
+666	204342	8
+666	204792	1
+666	204806	1
+666	204814	2
+666	204822	2
+666	204830	2
+666	204849	4
+666	204873	7
+666	204890	8
+666	204903	9
+666	204911	9
+666	204920	9
+666	204938	7
+666	204946	8
+666	204954	7
 \.
 
 
@@ -742,6 +888,7 @@ COPY public.cursos (cod_curso, tot_cred, nom_curso, cod_coord) FROM stdin;
 69	180	CONSTRUÇÃO DE EXPLOSIVOS	\N
 67	180	MONTAGEM DE FUZIL	\N
 63	180	CÁLCULO DE 666 GRAU	\N
+666	180	Ciencias Economicas 2.0	\N
 \.
 
 
